@@ -1,5 +1,5 @@
 # Mini-Projects-in-ORACLE
 SQL and PL/SQL based Projects
 
-Mini Project : Database Managements :: SQL and PL/SQL
+Mini Project : Database Management :: SQL and PL/SQL
 
