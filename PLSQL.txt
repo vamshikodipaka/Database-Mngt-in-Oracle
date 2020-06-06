@@ -1,0 +1,1166 @@
+Create or Replace Procedure login_Proc
+ ( v_username IN login_details.user_name%type,
+   v_password IN login_details.password%type,
+   v_status OUT BOOLEAN
+ )
+                    Is
+ cnt number;
+begin
+ Select count(*) into cnt from login_details
+                    where user_name=v_username
+                                  and
+                          password=v_password;
+ if cnt=1 then
+    v_status :=True;
+ else
+    V_status :=False;
+ End if;
+End login_proc;
+/
+
+EMPNO:	7788		ENAME :
+
+SAL  :			deptno:
+
+	
+		Find		exit
+	   emp_find(t1,t2,t3,t4);
+
+Create or Replace Procedure emp_Find
+ ( v_empno IN emp.empno%type,
+   v_ename OUT emp.ename%type,
+   v_sal out emp.sal%type,
+   v_deptno out emp.deptno%type
+ )
+                 is
+Begin
+  Select Ename, Sal, Deptno Into
+	   v_ename, v_sal, v_deptno		
+		       from Emp where empno=v_Empno;
+End Emp_find;
+/
+
+Declare
+ t_empno emp.empno%type :=&Empno;  -- 7839
+ t_ename emp.ename%type;
+ t_sal emp.sal%type;
+ t_deptno emp.deptno%type;
+Begin
+ Emp_Find(t_empno, t_ename, t_sal, t_deptno);
+ dopl(t_ename||' '||t_sal||' '||t_deptno);
+End;
+/
+
+-- write a stored procedure to generate student 
+total marks, avge, grade and ranks automatically.
+
+Create a student database table :
+---------------------------------
+Create Table student
+( sno varchar2(4),
+  Sname varchar2(10),
+  class varchar2(10),
+  Maths Number(6,2),
+  Phy Number(6,2),
+  Chem Number(6,2)
+);
+
+
+create student grades table :
+----------------------------
+ Create table stu_grades
+ (sno varchar2(4),
+  total number(6,2),
+  avge number(6,2),
+  grade varchar2(8),
+  rank number(3)
+ );
+
+Procedure for to generate student ranks:
+----------------------------------------
+
+Create or replace procedure stud_rank_proc
+                is
+ cursor stud_cur is select sno, total from 		stud_grades Order by Total Desc;
+ s stud_cur%rowtype;
+ Prev_total Number;
+ v_rank Number;
+Begin
+ Open Stud_cur;
+ Loop
+  Fetch stud_cur into s;  
+  Exit when stud_cur%notfound;
+  if stud_cur%rowcount=1 then
+      v_rank := 1;
+      prev_total := s.total;    
+  elsif s.total<prev_total then
+      v_rank := v_rank + 1;  
+      prev_total := s.total;   
+       end if;
+  update stud_grades set rank=v_rank where sno=s.sno;
+ End Loop;
+ close stud_cur;
+End stud_rank_proc;
+/
+
+Trigger on student table :
+-------------------------
+
+Create or replace trigger student_ins_trig
+after insert on student
+for each row
+declare
+ total stud_grades.total%type;
+ avge stud_grades.avge%type;
+ grade stud_grades.grade%type;
+begin
+ total := :new.maths + :new.phy + :new.chem;
+ avge := total / 3;
+ if :new.maths<35 or :new.phy<35 or :New.chem<35 then
+      Grade :='Fail';
+ elsif avge>=70 then
+     grade := 'A';
+ elsif avge>=60 then
+     grade := 'B';
+ elsif avge>=50 then
+     grade :='C';
+ else
+     grade :='D';
+ end if;
+ Insert into stud_grades values 
+  ( :New.sno, total, avge,grade,null);
+ stud_rank_Proc; -- calling procedure..
+End;
+/
+
+  
+insert into student values('s1','king','xi',80,90,80);
+insert into student values('s2','scott','xi',60,90,80);
+insert into student values('s3','jones','xi',90,90,90);
+insert into student values('s4','james','xi',80,90,80);
+
+SQL> SELECT * FROM STUDENT;
+
+SQL> SELECT * FROM STUD_GRADES;
+
+
+Procedures returns records...
+-----------------------------
+
+-- write a stored procedure to input employee number and return corresponding employee record.
+
+Create or replace Procedure Emp_Proc
+    ( v_empno In emp.empno%type,   
+      v_erec OUT emp%rowtype )
+                is
+Begin
+  Select * into v_erec from Emp where Empno=v_Empno;
+end Emp_proc;
+/
+
+TO invoke above procedure....
+
+Declare
+ i emp%rowtype;
+Begin
+ Emp_Proc(&empno,i);  -- calling procedure....
+ dopl(i.empno||' '||i.ename||' '||i.sal||' '||i.job||' '||i.deptno);
+End;
+/
+
+-- stored procedure for to return mutliple records using dynamic cursors(Weak Cursors)....
+
+Create or Replace Procedure Emp_Recs
+  ( v_deptno In Emp.Deptno%type,
+    v_cur OUT Sys_Refcursor )
+                  is
+Begin
+ Open v_cur for Select * from emp 
+			where deptno=v_Deptno;
+End Emp_recs;
+/
+
+Invoking procedure...
+----------------------
+Declare
+ e_cur sys_Refcursor;
+ i emp%rowtype;
+Begin
+ Emp_Recs(20,e_cur);  -- calling procedure....
+ Loop
+  Fetch e_cur into i;
+  exit when e_cur%notfound;
+  dopl(i.empno||' '||i.ename||' '||i.job||' '
+			||i.sal||' '||i.deptno);
+ End Loop;
+ Close e_cur;
+End;
+/
+
+
+Procedures with Default Arguments & Notations:
+----------------------------------------------
+
+Default Arguments :
+-------------------
+
+ -> While calling procedures, if we are not passing any arugment values by default it takes default values.
+
+--  Procedure for to insert data into 'Dept' Table.
+
+Create or Replace Procedure Dept_Proc
+  ( v_Deptno IN Dept.Deptno%type,
+    v_Dname IN Dept.Dname%type,
+    v_Loc IN Dept.Loc%type )
+                   is
+Begin
+  Insert into Dept values( v_deptno, v_dname, v_loc);
+End Dept_Proc;
+/
+
+executing above procedure:
+--------------------------
+
+Exec Dept_Proc(50,'ECONOMICS','Hyd');
+
+Exec Dept_Proc(60,'English');   -- error
+
+Using Default Arguments :
+-------------------------
+
+Create or Replace Procedure Dept_Proc
+  ( v_Deptno IN Dept.Deptno%type,
+    v_Dname IN Dept.Dname%type Default 'Unknown',
+    v_Loc IN Dept.Loc%type Default 'Unknown' )
+                   is
+Begin
+  Insert into Dept values( v_deptno, v_dname, v_loc);
+End Dept_Proc;
+/
+
+executing above procedure:
+--------------------------
+
+1. Exec Dept_Proc(60,'English');   
+
+  note : here Loc column takes 'UNKOWN'.
+
+2. Exec Dept_proc(70,'Hyd');
+
+   note : here DNAME takes as 'HYD', Loc columns            takes 'UNKOWN', 
+
+ -> to over come this problem... Procedure supports 'Notations' Concept.
+
+NOTAITONS :
+------------
+
+ -> While calling  the procedure to pass parameter values according their positions or argument names is called as NOTATIONS.  Basically Notaitons are three types.
+
+I. POSITIONAL NOTATIONS :
+-------------------------
+
+ -> While calling the procedure to pass parameter values according to their positions is called as positional notations(default).
+
+ex: DEPT_PROC(50,'ECONOMICS','HYD');
+
+II. NAMED NOTATIONS :
+----------------------
+
+
+ -> while calling the procedure to pass parameter values according by using FORMAT ARGUMENT names.
+
+
+1. EXEC DEPT_PROC (V_DNAME=>'SOCIAL',V_LOC=>'Hyd',V_DEPTNO=>70);
+III. Mixed Notations :
+-----------------------
+
+
+
+  -> Both Postional and Formal Arguments...
+
+ex: Exec Dept_Proc(80,v_loc=>'Sec');
+
+** to see the Procedure Body 
+
+ Select Text from User_Source where Name='DEPT_PROC';
+
+** To see the Created Procedure Names...
+
+ Select Object_Name from user_Objects
+		where Object_type='PROCEDURE';
+
+Dropping Procedures...
+-----------------------
+
+sql> Drop Procedure Dept_Proc;
+
+
+II. USER DEFINED FUNCTIONS :
+----------------------------
+
+-> it is one of the sub_program.
+
+-> Function is a Self Contained Block, and it shouldbe return a Value by using RETURN statement.
+
+-> Functions are  also supports MODES.
+
+-> Functions are Mainly used for to perform    mathematical calcutions.
+
+- Functions are also proivdes Modularit, Re-  usability.
+
+-> All created Functions are stored in'USER_OBJECTS'
+
+-> Functions are also supports FUNCTION Overloading,     but it is suppored in PACKAGES only.
+
+-> Generally Functions are Executed by using SELECT      command.
+
+-> functions are also returns morethan one values by     using OUT parameter modes.
+
+Syntax:
+-------
+
+ Create or Replace Function <Function_name>
+ [( Arg1 Mode Datatype, Arg2 Mode Datatype.. )]
+                Return <Datatype>
+                       is
+[   <variable declaration>;]
+ Begin
+  <exec-statements>;
+  Return(value);
+ [ Exception
+  <exec-statements>;
+  Return(Value); ]
+ End [ <Function_name> ];
+/
+
+Example :
+-----------
+
+-- write a user defined function to find simple interest.
+
+si := pnr/100;
+
+Create or Replace Function SI
+     ( P NUMBER, N NUMBER, R NUMBER )
+
+                Return Number
+                     is
+ Simple_int Number;
+Begin
+  Simple_int := ( P * N * R )/100;
+  Return(Simple_int);
+End Si;
+/
+
+To execute above Function ON SQL PROMPT :
+-----------------------------------------
+
+sql>  Select Si(1000,2,10) from dual;
+
+method 2:
+----------
+
+sql> variable simple_int number;
+
+SQL> EXEC :SIMPLE_INT := SI(1000,2,10); -- calling function
+
+sql PRINT :SIMPLE_INT;
+
+Using PL/SQL BLOCK :
+--------------------
+Declare
+ Interest Number;
+Begin
+ Interest := Si(1000,2,10);  -- calling function
+ dopl(Interest);
+End;
+/
+
+method 4:
+---------
+
+Declare
+ Interest Number;
+Begin
+ Select Si(1000,2,10) Into Interest  From Dual;
+		 -- calling function
+ dopl(Interest);
+End;
+/
+
+method 5 :
+-----------
+
+Begin
+ Dopl('Interest = '||Si(1000,2,10));
+End;
+/
+
+-- user defined function for to input employee number and return corresponding employee experiences.... in character format...
+
+Create or Replace Function Emp_Exp
+ (  v_Empno In Emp.Empno%type )
+         Return Varchar2
+                is
+ Expe Number;
+Begin
+ Select Round ((Sysdate - Hiredate )/365) 
+           Into Expe from Emp where Empno=v_empno;
+ RETURN(V_Empno||' Employee Experience is '||
+    to_char(To_date(Expe,'j'),'jsp')||' Years.');
+Exception
+ when no_data_found then
+  Return(' Invalid Employ Number ');
+End Emp_exp;
+/
+
+EXECUTIONS;
+-----------
+
+sql> Select Emp_Exp(7788) from dual;
+
+sql> Select Emp_Exp(Empno) from Emp;
+
+
+FUNCTION return type is BOOLEAN :
+---------------------------------
+
+ -> Function return TRUE / FALSE.
+
+SQL> select * from login_details;
+
+USER_ USER_NAME  PASSWORD   ROLE
+----- ---------- ---------- ----------
+U1    KING       KIN123     ADMIN
+U2    SCOTT      SCOTT123   EMPLOY
+U3    JONES      JONES123   GUEST
+
+Create or replace function UserLogin_Fun
+   ( v_username Login_Details.user_name%type,
+     v_password Login_Details.Password%type )
+                Return Boolean
+                       is
+  cnt number;
+Begin
+ Select Count(*) into Cnt from Login_Details
+		  where user_name=v_username  AND
+                        password = v_password;
+ if cnt=1 then
+    Return(True);
+ else
+    Return(False);
+ End if;
+End userLogin_Fun;
+/
+
+NOTE : above function is not executed on SQL PROMPT. 
+because SQL it not supported BOOLEAN datatype.  To execute above function we must write one PL/SQL BLOCK.
+
+Begin
+ If UserLogin_Fun('SCOTT','SCOTT123')=True then
+    DOPL(' User Login Succssfully.');
+ Else
+    DOPL(' Invalid UserName/Password.');
+ End If;
+End;
+/
+
+Begin
+ If UserLogin_Fun('SCOTT','SCOTT12')=True then
+    DOPL(' User Login Succssfully.');
+ Else
+    DOPL(' Invalid UserName/Password.');
+ End If;
+End;
+/
+
+****** NESTED FUNCTIONS *********
+
+** Write a User defined Function Take Records from Cric_s Table and Inserted into Cric_D table.
+
+Create Table Cric_S
+( Cid Varchar2(5), Cname Varchar2(30) );
+
+Insert Records into Cric_S Table.
+----------------------------------
+
+Insert into Cric_S Values('C1','VIRAT KOHLI');
+Insert into Cric_S Values
+		('C2','RAMESH SACHIN TENDULKAR');
+Insert into Cric_S Values('C3','YOUVRAJ SINGH');
+Insert into Cric_S Values
+		('C4','MAHENDAR SINGH DHONI');
+
+SQL> SELECT * FROM CRIC_S;
+
+CID   CNAME
+----- ------------------------------
+C1    VIRAT KOHLI
+C2    MAHENDER SINGH DHONI
+C3    YOUVRAJ SINGH
+C4    RAMESH SACHIN TENDULKAR
+
+** create a Cric Destination Table
+
+Create Table Cric_D
+( Cid Varchar2(5),
+  Fname Varchar2(20),
+  Mname Varchar2(20),
+  Lname Varchar2(20)
+);
+
+SQL> select *from Cric_D;
+
+**** FUNCTION for to Find FIRST NAME ********
+
+Create or replace Function Fname
+   ( Cname cric_s.cname%type )
+         Return Varchar2
+               is
+ Fname Cric_d.Fname%type;
+Begin
+ FName := Substr(Cname,1,Instr(Cname,' ',1,1)-1);
+ Return(Fname);
+End Fname;
+/
+
+**** FUNCTION for to Find Last NAME ********
+
+Create or replace Function LName
+   ( Cname Cric_s.Cname%type)
+          return Varchar2
+                is
+ LName cric_d.Lname%type;
+Begin
+ Lname := Substr(Cname,Instr(Cname,' ',-1,1)+1);
+ Return(Lname);
+End Lname;
+/
+
+**** FUNCTION for to Find Middle NAME ********
+
+Create or Replace Function MName
+ ( Cname Cric_s.Cname%type )
+       Return Varchar2
+              is
+  Mname Cric_d.Mname%type;
+  FirstName Cric_d.Fname%type;
+  LastName Cric_d.Lname%type;
+Begin
+ FirstName := Fname(Cname);
+ LastName := Lname(Cname);
+ Mname := Trim(Rtrim(Ltrim                       			(Cname,Firstname),LastName));
+ Return(MName);
+End Mname;
+/
+
+*** Procedure for to insert data from cric_s table to Cric_d table ****
+
+Create or Replace Procedure Cric_Proc
+               is
+ Cursor cric_cur is select * from cric_s;
+Begin
+ For i in Cric_Cur
+ Loop
+  Insert into Cric_D Values
+   ( I.Cid, Fname(i.cname),Mname(i.cname),
+				Lname(i.cname));
+ End Loop;
+ Dopl('Procedure Executed Successfully.');
+End;
+/
+
+
+SQL> Exec cric_proc;
+sql> select *from cric_s;
+sql> select * from cric_d;
+
+
+
+
+** to see the FUNCTION Body 
+
+ Select Text from User_Source where Name='USERLOGIN_FUN';
+
+** To see the Created Procedure Names...
+
+ Select Object_Name from user_Objects
+		where Object_type='FUNCTION';
+
+Dropping Functions :
+--------------------
+
+Drop Function <Function-name>;
+
+Drop Function UserLogin_Fun;
+
+PACKAGES :
+----------
+
+ PACKAGES :
+
+-> It is a collection of Variables, Cursors,        Procedures & Functions are stored in one 
+   location.
+
+-> Easy to share the Subprograms in Application 
+    S/w Tools
+
+-> They Improve performance while accessing       subprograms from client location
+
+-> They are stored in “User_Source” system table
+
+-> They supports Procedure Overloading, function         Overloading, Encapsulation & Databinding
+ 
+-> Packages  cannot be Return values & it doesn’t       support Parameters.
+
+-> It has two parts
+
+1.	Package Specification :
+
+   ->	It holds the declaration of Variables,                Cursors & Subprograms
+
+2.	Package Body:
+
+    ->	It holds the body of subprograms
+
+Public Variables :
+------------------
+
+ -> To declare variable in PACKAGE SPECIFICATION,         that variables are called as Public Variables.
+
+ -> These Variables can Acces Any Where in PACKAGE        BODY or Outside the of the Package Body(in            ANONYMOUS BLOCKS).
+
+Private Variable :
+------------------
+
+ -> These vairble declare in Procedure or Function Definitions in Package body that type vairable is called as PRIVATE Variable.  
+
+ -> These Varibles Scope with in the Procedure or     Function Body.
+
+*** But, To Declare Variable in PACKAGE BODY( outside     of sub-programs), those variables we can access       anywhere in the package body.
+
+
+Example :
+----------
+
+Package Specification :
+-----------------------
+
+Create or Replace Package MY_Pack
+               is
+ Procedure Emp_Netsal( v_Empno Emp.Empno%type);
+ Function Emp_Grade(V_Empno Emp.Empno%type) 	
+		Return Varchar2;
+End My_pack;
+/
+
+PACKAGE BODY :
+--------------
+
+Create or Replace Package Body My_Pack
+                is
+ -- *** Procedure Body
+ Procedure Emp_Netsal(v_Empno Emp.Empno%type)
+                  is
+  Netsal Number;
+ Begin
+  Select Sal + Nvl(Comm,0) Into Netsal from Emp
+			where Empno=v_Empno;
+  Dopl(v_Empno||' Employ Net Salary = '||Netsal);
+Exception 
+ when no_data_found then
+   dopl('Employ record not found.');
+ End Emp_Netsal;
+
+ -- *** Function Body
+ Function Emp_Grade(v_Empno Emp.Empno%type)
+           Return Varchar2
+                   is
+  v_Grade Number;
+ Begin
+  Select Grade into V_Grade From Salgrade
+		where ( Select Sal from Emp 
+			 where Empno=v_Empno)
+          Between Losal and Hisal;
+   Return(v_Empno||' Employee Grade is '||v_Grade);
+Exception
+ when No_data_Found then
+  Return('Employ Record Not found.');
+End Emp_grade;
+
+End My_Pack;
+/
+
+to execute above package.
+-------------------------
+
+sql> Exec My_Pack.Emp_Netsal(7788);
+sql> Exec My_Pack.Emp_Netsal(9000);
+
+sql> Select My_Pack.Emp_Grade(7788) from dual;
+sql> Select My_Pack.Emp_Grade(Empno) from Emp;
+sql> Select My_Pack.Emp_Grade(9000) from dual;
+
+**** FUNCTION OVERLOADING *****
+
+-> Function Name is same, but we can pass different types of variables or different number of parameters is called as function overloading.
+
+ -> Only pckages supports.
+
+Package Specification:
+----------------------
+
+Create or Replace Package Fo_Pack
+             is
+ Function AddVal(a number, b number) return Number;
+ Function Addval(a number, b number, c number) return Number;
+ Function Addval(str1 varchar2, str2 varchar2) Return Varchar2;
+End Fo_pack;
+/
+
+Package body :
+--------------
+
+Create or Replace Package Body Fo_Pack
+                  is
+ Function Addval(a number, b number) return Number
+                    is
+ Begin
+  return(a + b);
+ End Addval;
+
+ Function Addval(a number, b number, c number) return  Number
+                    is
+ Begin
+  return(a + b + c);
+ End Addval;
+ 
+ Function Addval(Str1 Varchar2, Str2 Varchar2)
+		 return Varchar2
+                    is
+ Begin
+  return(str1||' '||str2);
+ End Addval;
+End Fo_pack;
+/
+
+sql> Select fo_pack.Addval(10,20) from dual;
+
+sql> Select fo_pack.Addval(10,20,30) from dual;
+
+sql> Select fo_pack.Addval('naresh','it') from dual;
+
+*** PROCEDURE OVERLOADING 
+
+Create a Employee table with Employeeid,        Employeename,Doj, Sal, Deptno, mailid.
+
+ Create Table Employee(Empno Varchar2(5),
+		       Ename Varchar2(10),
+                       Doj Date,
+                       Sal Number(8,2),
+                       Deptno Number(2),
+                       mail_id Varchar2(20)
+                      );
+
+Insert into Employee values
+ ('E1','King',sysdate,5000,10,'king@gmail.com');
+Insert into Employee values
+ ('E2','Scott',sysdate,3000,20,'scott@gmail.com');
+Insert into Employee values
+ ('E3','Jones',sysdate,4500,10,'JOnes@gmail.com');
+
+select * from Employee;
+
+Create or Replace Package Emp_Pack
+              is
+ Procedure Fire_Employ(v_Empno Employee.Empno%type);
+ Procedure Fire_Employ(v_mail_id Employee.Mail_id%type);
+End Emp_Pack;
+/
+
+Package Body :
+--------------
+
+Create or Replace Package Body Emp_Pack
+                  is
+ Procedure Fire_Employ(v_Empno Employee.Empno%type)
+                 is
+ Begin
+  Delete From Employee where Empno=v_Empno;
+  commit;
+  Dopl(v_Empno||' Employee Record Deleted.');
+ End Fire_Employ;
+
+ Procedure Fire_Employ(v_Mail_id Employee.Mail_Id%type)
+                 is
+ Begin
+  Delete From Employee where Mail_id=v_Mail_id;
+  commit;
+  Dopl(v_Mail_id||' Employee Record Deleted.');
+ End Fire_Employ;
+End Emp_Pack;
+/
+
+SQL> Exec Emp_pack.Fire_Employ(1);
+
+SQL> Exec Emp_pack.Fire_Employ('scott@gmail.com'); 
+
+*** to see the package body...
+
+ Select Text from user_source where name='EMP_PACK';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+			
+
+
+
+
+
+
+
+
+
+
+
+ 
+ 
+ 
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+ 
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Declare
+ flag boolean;
+Begin
+ Login_proc('&username','&password',FLAG); -- calling procedure
+ if FLAG=TRUE then
+     dopl('Login Successfully.');
+ else
+     dopl('Invalid username/password.');
+ end if;
+End;
+/
+
+
+
+
+
+
+
+
+
+
+
